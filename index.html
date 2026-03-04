@@ -21,7 +21,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, serverTimestamp, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
-        // ✅ Save Firebase SDK to a new global variable (Updated per request)
+        // ✅ Firebase Ready Global Object
         window.FirebaseReady = {
             initializeApp,
             getAuth,
@@ -109,10 +109,20 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- 1. CORE DATA & CONSTANTS ---
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz90O07Wp6fZ9c6XZXdJ2Pgoa0un_PA6U_H14DxH3e4h4byv--maAls_wwlAOJ3v449/exec";
+        // --- 1. CONFIG & DATA (DIDEFINISIKAN PALING ATAS) ---
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLBiRsSEHdmLxDHBmmNneaDxDGIQVgWboBd1dcEIxmSZnCMsZzyg66k9TGhtWYleLJ/exec";
 
-        const CATEGORIES = [
+        const FIREBASE_CONFIG_DATA = {
+            apiKey: "AIzaSyDCTebeG42Vj1G9TRIApiLhwfsxng5mP0Y",
+            authDomain: "ppkbis-shell.firebaseapp.com",
+            projectId: "ppkbis-shell",
+            storageBucket: "ppkbis-shell.firebasestorage.app",
+            messagingSenderId: "942093342515",
+            appId: "1:942093342515:web:29a844b91ba357835a9046",
+            measurementId: "G-M5Q9NCD7JF"
+        };
+
+        const CATEGORIES_LIST = [
             { id: 'UNIT BAHASA', label: 'Unit Bahasa', color: '#2563eb', text: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-600' },
             { id: 'UNIT SAINS MATE', label: 'Unit Sains & Mate', color: '#059669', text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-600' },
             { id: 'UNIT SAINS SOSIAL', label: 'Unit Sains Sosial', color: '#d97706', text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-600' },
@@ -134,19 +144,15 @@
             'SUMBER TEKNOLOGI PENDIDIKAN': ['Eddy@Iskandar bin Ajmain']
         };
 
+        const JENIS_TUGAS_OPTIONS = ["KURSUS", "BENGKEL", "TAKILMAT", "MESYUARAT DI LUAR TUGAS RASMI"];
+
+        // --- 2. HELPER FUNCTIONS ---
         function getDefaultJawatan(cid) {
-            const cat = CATEGORIES.find(c => c.id === cid);
+            const cat = CATEGORIES_LIST.find(c => c.id === cid);
             if (!cat) return '';
             const isPP = ['PENDIDIKAN ISLAM', 'PENDIDIKAN KHAS', 'PEMULIHAN KHAS', 'SUMBER TEKNOLOGI PENDIDIKAN'].includes(cid);
             return isPP ? `PENOLONG PEGAWAI PENDIDIKAN (${cat.label.toUpperCase()})` : `SISC+ ${cat.label.toUpperCase()}`;
         }
-
-        const INITIAL_FORM = {
-            reportType: 'opr', jenisTugasRasmi: 'KURSUS', namaProgram: '', kategori: 'UNIT BAHASA', disediakanOleh: '', 
-            jawatanPenyedia: getDefaultJawatan('UNIT BAHASA'), tarikhDari: '', tarikhHingga: '', tarikhLaporan: '', 
-            masaMula: '', masaTamat: '', tempat: '', sasaran: '', aktiviti: '', anjuran: '', 
-            rujukanSurat: '', kehadiran: '', pengenalan: '', objektif: '', pengisian: '', catatan: '', penutup: ''
-        };
 
         const formatDateRange = (d1, d2) => {
             const f1 = d1 ? d1.split('-').reverse().join('/') : '';
@@ -161,9 +167,15 @@
             return `${hour % 12 || 12}:${m} ${ampm}`;
         };
 
-        const JENIS_TUGAS_OPTIONS = ["KURSUS", "BENGKEL", "TAKILMAT", "MESYUARAT DI LUAR TUGAS RASMI"];
+        // --- 3. FORM INITIALIZATION ---
+        const INITIAL_FORM = {
+            reportType: 'opr', jenisTugasRasmi: 'KURSUS', namaProgram: '', kategori: 'UNIT BAHASA', disediakanOleh: '', 
+            jawatanPenyedia: getDefaultJawatan('UNIT BAHASA'), tarikhDari: '', tarikhHingga: '', tarikhLaporan: '', 
+            masaMula: '', masaTamat: '', tempat: '', sasaran: '', aktiviti: '', anjuran: '', 
+            rujukanSurat: '', kehadiran: '', pengenalan: '', objektif: '', pengisian: '', catatan: '', penutup: ''
+        };
 
-        // --- 2. BASE ICON COMPONENT ---
+        // --- 4. UI SUB-COMPONENTS ---
         const IconBase = ({ size = 24, className = "", children, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
                 {children}
@@ -171,7 +183,7 @@
         );
 
         const Icons = {
-            Sparkles: (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1-1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v4"/><path d="M23 21h-4"/></IconBase>,
+            Sparkles: (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1-1.275 1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v4"/><path d="M23 21h-4"/></IconBase>,
             Layout: (p) => <IconBase {...p}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="10" x2="10" y1="21" y2="10"/></IconBase>,
             Flag: (p) => <IconBase {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></IconBase>,
             Library: (p) => <IconBase {...p}><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></IconBase>,
@@ -197,9 +209,8 @@
 
         const { Sparkles, Layout, Flag, Library, BarChart2, Settings, Camera, Cloud, ChevronLeft, Download, Printer, ExternalLink, Eye, Edit2, Trash2, School, X, Plus, Users, Trash, ChevronDown, Menu } = Icons;
 
-        // --- 3. DOCUMENT PREVIEW COMPONENTS ---
         const ReportDoc = ({ data, reportImages, config }) => {
-            const cat = CATEGORIES.find(c => c.id === data.kategori) || CATEGORIES[0];
+            const cat = CATEGORIES_LIST.find(c => c.id === data.kategori) || CATEGORIES_LIST[0];
             return (
                 <div className="a4-fixed bg-white text-black shadow-lg">
                     <div className={`border-[3px] border-double ${cat.border} h-full flex flex-col p-6 overflow-hidden bg-white`}>
@@ -291,7 +302,24 @@
             </div>
         );
 
-        // --- 4. MAIN APP COMPONENT ---
+        const PreviewMenuComp = ({ handlePrint, downloadAsJPG }) => (
+            <div className="preview-toolbar no-print flex items-center justify-center gap-2 mb-4 bg-white p-2 rounded-2xl shadow-md border border-slate-100">
+                <button onClick={handlePrint} title="Download as PDF" className="btn-action btn-action-square btn-action-pdf">
+                    <Download size={20} />
+                    <span className="mt-1 uppercase font-bold text-[7px]">PDF</span>
+                </button>
+                <button onClick={downloadAsJPG} title="Download as Image" className="btn-action btn-action-square btn-action-jpg">
+                    <Download size={20} />
+                    <span className="mt-1 uppercase font-bold text-[7px]">JPG</span>
+                </button>
+                <button onClick={handlePrint} title="Print Document" className="btn-action btn-action-square btn-action-print">
+                    <Printer size={20} />
+                    <span className="mt-1 uppercase font-bold text-[7px]">PRINT</span>
+                </button>
+            </div>
+        );
+
+        // --- 5. MAIN APP COMPONENT ---
         function App() {
             const [user, setUser] = useState(null);
             const [db, setDb] = useState(null);
@@ -352,19 +380,18 @@
                 return Object.values(sysConfig.staffData).flat().sort();
             }, [sysConfig.staffData]);
 
-            // ✅ Robust Firebase Initialization to fix "Cloud Sync not ready"
+            // ✅ ROBUST FIREBASE INITIALIZATION FOR GITHUB PAGES
             useEffect(() => {
                 const initFirebase = async () => {
                     if (window.FirebaseReady) {
                         try {
                             const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getFirestore, onAuthStateChanged } = window.FirebaseReady;
-                            const firebaseConfig = JSON.parse(__firebase_config);
-                            const app = initializeApp(firebaseConfig);
+                            const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : FIREBASE_CONFIG_DATA;
+                            const app = initializeApp(config);
                             const auth = getAuth(app);
                             const firestore = getFirestore(app);
                             setDb(firestore);
 
-                            // Strict await for auth
                             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                                 await signInWithCustomToken(auth, __initial_auth_token);
                             } else {
@@ -384,22 +411,14 @@
                         }
                     }
                 };
-                
-                // Interval check with clear logic
-                const interval = setInterval(() => {
-                    if (window.FirebaseReady) {
-                        clearInterval(interval);
-                        initFirebase();
-                    }
-                }, 100);
+                const interval = setInterval(() => { if (window.FirebaseReady) { clearInterval(interval); initFirebase(); } }, 150);
                 return () => clearInterval(interval);
             }, []);
 
-            // Data Fetching
+            // Data Fetching Rule 1: Strict Paths
             useEffect(() => {
                 if (!user || !db) return;
                 const { collection, onSnapshot, doc } = window.FirebaseReady;
-                
                 const reportsCol = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
                 const unsubReports = onSnapshot(reportsCol, (snap) => {
                     const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -453,26 +472,20 @@
                     area.style.left = '0'; area.style.top = '0';
                     area.style.opacity = '1'; area.style.zIndex = '99999';
                     area.style.backgroundColor = '#ffffff';
-
                     await new Promise(r => setTimeout(r, 800));
                     const canvas = await window.html2canvas(area, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
                     area.style.display = 'none';
-
                     const base64 = canvas.toDataURL('image/jpeg', 0.85); 
-                    const name = (viewingReport || formData).namaProgram || "Laporan_SOLE";
-                    const category = (viewingReport || formData).kategori;
-                    const staffName = (viewingReport || formData).disediakanOleh;
-
                     await fetch(WEB_APP_URL, {
                         method: "POST",
-                        body: JSON.stringify({ fileData: base64, fileName: `${name}.jpg`, mimeType: "image/jpeg", category, staffName })
+                        body: JSON.stringify({ fileData: base64, fileName: `${(viewingReport || formData).namaProgram || "Laporan"}_SOLE.jpg`, mimeType: "image/jpeg", category: (viewingReport || formData).kategori, staffName: (viewingReport || formData).disediakanOleh })
                     });
                 } catch (e) { console.error("Drive error:", e); }
             };
 
             const handleSaveReport = async () => {
                 if (!formData.namaProgram || !formData.tarikhDari) return showStatus("Tajuk & Tarikh diperlukan!", "error");
-                if (!user || !db) return showStatus("Cloud sync not ready", "error");
+                if (!user || !db) return showStatus("Cloud sync belum sedia...", "error");
                 setIsSaving(true);
                 const { collection, addDoc, doc, updateDoc, serverTimestamp } = window.FirebaseReady;
                 try {
@@ -565,7 +578,7 @@
                 const total = filtered.length;
                 const oprCount = filtered.filter(r => r.reportType === 'opr').length;
                 const execCount = filtered.filter(r => r.reportType === 'eksekutif').length;
-                const unitCounts = {}; CATEGORIES.forEach(c => unitCounts[c.id] = 0);
+                const unitCounts = {}; CATEGORIES_LIST.forEach(c => unitCounts[c.id] = 0);
                 filtered.forEach(r => { if (unitCounts[r.kategori] !== undefined) unitCounts[r.kategori]++; });
                 const personCounts = {}; filtered.forEach(r => { if (r.disediakanOleh) personCounts[r.disediakanOleh] = (personCounts[r.disediakanOleh] || 0) + 1; });
                 const ranking = Object.entries(personCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
@@ -576,23 +589,6 @@
                 const newStaffData = { ...sysConfig.staffData, [unitId]: newStaffArray };
                 setSysConfig(prev => ({ ...prev, staffData: newStaffData }));
             };
-
-            const PreviewMenuComp = ({ handlePrint, downloadAsJPG }) => (
-                <div className="preview-toolbar no-print">
-                    <button onClick={handlePrint} title="Download as PDF" className="btn-action btn-action-square btn-action-pdf">
-                        <Download size={20} />
-                        <span className="mt-1 uppercase font-bold text-[7px]">PDF</span>
-                    </button>
-                    <button onClick={downloadAsJPG} title="Download as Image" className="btn-action btn-action-square btn-action-jpg">
-                        <Download size={20} />
-                        <span className="mt-1 uppercase font-bold text-[7px]">JPG</span>
-                    </button>
-                    <button onClick={handlePrint} title="Print Document" className="btn-action btn-action-square btn-action-print">
-                        <Printer size={20} />
-                        <span className="mt-1 uppercase font-bold text-[7px]">PRINT</span>
-                    </button>
-                </div>
-            );
 
             return (
                 <React.Fragment>
@@ -630,13 +626,67 @@
 
                             <main className="flex-1 h-full overflow-y-auto bg-[#f8fafc] p-4 md:p-12 relative">
                                 <div className="max-w-6xl mx-auto w-full pb-24">
+                                    {activeTab === 'analisis' && (
+                                        <div className="space-y-10 fade-in">
+                                            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                                <div>
+                                                    <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">Analysis Dashboard</h2>
+                                                    <p className="text-slate-500 text-[10px] font-bold uppercase mt-2 tracking-widest">Real-time Metrics & Statistics</p>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <select value={anaFilterUnit} onChange={e => setAnaFilterUnit(e.target.value)} className="p-2 bg-slate-50 border rounded-xl text-[10px] font-black uppercase outline-none shadow-inner"><option value="ALL">All Units</option>{CATEGORIES_LIST.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+                                                    <select value={anaFilterType} onChange={e => setAnaFilterType(e.target.value)} className="p-2 bg-slate-50 border rounded-xl text-[10px] font-black uppercase outline-none shadow-inner"><option value="ALL">All Types</option><option value="opr">OPR</option><option value="eksekutif">Executive</option></select>
+                                                    <select value={anaFilterPerson} onChange={e => setAnaFilterPerson(e.target.value)} className="p-2 bg-slate-50 border rounded-xl text-[10px] font-black uppercase outline-none shadow-inner"><option value="ALL">All Officers</option>{ALL_STAFF_LIST.map(name => <option key={name} value={name}>{name}</option>)}</select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex flex-col items-center"><Library size={32} className="text-indigo-600 mb-2"/><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Records</p><h3 className="text-5xl font-black text-slate-900 mt-1">{stats.total}</h3></div>
+                                                <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex flex-col">
+                                                    <div className="flex justify-between items-start mb-4"><div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">OPR Ratio</p><h3 className="text-4xl font-black text-slate-900">{stats.oprCount}</h3></div><span className="text-lg font-black text-indigo-500">{stats.total > 0 ? ((stats.oprCount / stats.total) * 100).toFixed(1) : 0}%</span></div>
+                                                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${stats.total > 0 ? (stats.oprCount / stats.total) * 100 : 0}%` }}></div></div>
+                                                </div>
+                                                <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex flex-col">
+                                                    <div className="flex justify-between items-start mb-4"><div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Executive Ratio</p><h3 className="text-4xl font-black text-slate-900">{stats.execCount}</h3></div><span className="text-lg font-black text-amber-500">{stats.total > 0 ? ((stats.execCount / stats.total) * 100).toFixed(1) : 0}%</span></div>
+                                                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-amber-500 transition-all duration-1000" style={{ width: `${stats.total > 0 ? (stats.execCount / stats.total) * 100 : 0}%` }}></div></div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                                <div className="lg:col-span-8 bg-white p-6 md:p-12 rounded-[2.5rem] border shadow-sm overflow-x-auto">
+                                                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3 mb-16"><BarChart2 size={20} className="text-indigo-500" /> Comparison by Unit</h4>
+                                                    <div className="flex items-end justify-between h-56 min-w-[500px] border-b relative">
+                                                        {CATEGORIES_LIST.map((cat) => {
+                                                            const count = stats.unitCounts[cat.id] || 0;
+                                                            const max = Math.max(...Object.values(stats.unitCounts), 1);
+                                                            const height = stats.total > 0 ? (count / max) * 100 : 0;
+                                                            return (<div key={cat.id} className="relative flex flex-col items-center flex-1 mx-1 h-full group text-center"><div className="absolute bottom-full mb-1 bg-slate-800 text-white text-[8px] px-2 py-1 rounded shadow-xl z-20 whitespace-nowrap">{count}</div><div className="w-full bg-slate-50 rounded-t-xl overflow-hidden h-full flex flex-col justify-end"><div className="chart-bar-anim w-full" style={{ height: `${height}%`, backgroundColor: cat.color }}></div></div><div className="absolute top-full mt-4 w-full h-12"><span className="text-[7px] font-black text-slate-400 uppercase transform -rotate-45 block origin-center">{cat.label}</span></div></div>);
+                                                        })}
+                                                    </div>
+                                                </div>
+                                                <div className="lg:col-span-4 bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl flex flex-col min-h-[400px]">
+                                                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-10 text-slate-400 flex items-center gap-2"><Users size={16} className="text-amber-400" /> Top Contributors</h4>
+                                                    <div className="space-y-4 flex-grow overflow-y-auto pr-2 scrollbar-hide">
+                                                        {stats.ranking.length > 0 ? stats.ranking.map((rank, idx) => (
+                                                            <div key={idx} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/10">
+                                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${idx === 0 ? 'bg-amber-400 text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{idx + 1}</div>
+                                                                <div className="flex-grow min-w-0"><p className="text-[9px] font-black uppercase truncate">{rank.name}</p><div className="mt-1 w-full h-1 bg-white/10 rounded-full"><div className="h-full bg-amber-400" style={{ width: `${(rank.count / (stats.ranking[0]?.count || 1)) * 100}%` }}></div></div></div>
+                                                                <div className="font-black text-xs text-amber-400 pr-1">{rank.count}</div>
+                                                            </div>
+                                                        )) : (<div className="h-full flex items-center justify-center opacity-30 italic text-[10px] uppercase font-bold text-white text-center">No Data</div>)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {(activeTab === 'editor' || activeTab === 'laporan_eksekutif') && !viewingReport && (
                                         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 md:gap-12 fade-in">
                                             <div className="xl:col-span-5 space-y-8 order-2 xl:order-1">
                                                 <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-slate-100">
                                                     <h3 className="font-black text-slate-800 text-lg uppercase tracking-widest mb-8">{editingId ? 'Update' : 'New Entry'}</h3>
                                                     <div className="space-y-4">
-                                                        <select name="kategori" value={formData.kategori} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold outline-none focus:ring-2 ring-indigo-500/20">{CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+                                                        <select name="kategori" value={formData.kategori} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold outline-none focus:ring-2 ring-indigo-500/20">{CATEGORIES_LIST.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
                                                         {activeTab === 'laporan_eksekutif' && (<select name="jenisTugasRasmi" value={formData.jenisTugasRasmi} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold outline-none">{JENIS_TUGAS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select>)}
                                                         <input type="text" name="namaProgram" placeholder="Program Title..." value={formData.namaProgram} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold placeholder:opacity-50" />
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -679,8 +729,8 @@
                                                             <div className="grid grid-cols-2 gap-4">
                                                                 {images.map((img, i) => (
                                                                     <div key={`img-slot-${i}`} className="aspect-video bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group">
-                                                                        {img ? (<React.Fragment><img src={img} className="w-full h-full object-cover" /><button type="button" onClick={() => removeImageSlot(i)} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-full shadow-lg opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-all"><X size={14}/></button></React.Fragment>) : (
-                                                                            <div className="flex flex-col items-center gap-2"><label className="cursor-pointer flex flex-col items-center gap-2"><Camera size={24} className="text-slate-400" /><input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(i, e)} /></label>{formData.reportType === 'eksekutif' && (<button onClick={() => removeImageSlot(i)} className="text-[8px] font-bold text-rose-400 uppercase">Hapus</button>)}</div>
+                                                                        {img ? (<React.Fragment><img src={img} className="w-full h-full object-cover" /><button type="button" onClick={() => removeImageSlot(i)} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-full shadow-lg opacity-100 transition-all"><X size={14}/></button></React.Fragment>) : (
+                                                                            <div className="flex flex-col items-center gap-2"><label className="cursor-pointer flex flex-col items-center gap-2"><Camera size={24} className="text-slate-400" /><input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(i, e)} /></label>{formData.reportType === 'eksekutif' && (<button onClick={() => removeImageSlot(i)} className="text-[8px] font-bold text-rose-400 uppercase hover:text-rose-600 transition-colors">Hapus</button>)}</div>
                                                                         )}
                                                                     </div>
                                                                 ))}
@@ -712,10 +762,10 @@
                                                     <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full md:w-64 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-bold outline-none shadow-inner" />
                                                 </div>
                                                 <div className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-4 border-t pt-8">
-                                                    <div className="flex flex-col gap-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">Unit</span><select value={archiveFilterUnit} onChange={e => setArchiveFilterUnit(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none shadow-sm transition-all"><option value="ALL">All</option>{CATEGORIES.map(cat => (<option key={cat.id} value={cat.id}>{cat.label}</option>))}</select></div>
+                                                    <div className="flex flex-col gap-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">Unit</span><select value={archiveFilterUnit} onChange={e => setArchiveFilterUnit(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none shadow-sm transition-all"><option value="ALL">All</option>{CATEGORIES_LIST.map(cat => (<option key={cat.id} value={cat.id}>{cat.label}</option>))}</select></div>
                                                     <div className="flex flex-col gap-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">Officer</span><select value={archiveFilterPerson} onChange={e => setArchiveFilterPerson(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none shadow-sm transition-all"><option value="ALL">All</option>{ALL_STAFF_LIST.map(name => <option key={name} value={name}>{name}</option>)}</select></div>
                                                     <div className="flex flex-col gap-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">Type</span><select value={archiveFilterType} onChange={e => setArchiveFilterType(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none shadow-sm transition-all"><option value="ALL">All</option><option value="opr">OPR</option><option value="eksekutif">Exec</option></select></div>
-                                                    <div className="flex flex-col gap-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">Year</span><select value={archiveFilterYear} onChange={e => setArchiveFilterYear(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase outline-none shadow-sm transition-all"><option value="ALL">All</option>{availableYears.map(year => <option key={year} value={year}>{year}</option>)}</select></div>
+                                                    <div className="flex flex-col gap-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">Year</span><select value={archiveFilterYear} onChange={e => setArchiveFilterYear(e.target.value)} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase shadow-sm transition-all"><option value="ALL">All</option>{availableYears.map(year => <option key={year} value={year}>{year}</option>)}</select></div>
                                                     <div className="flex flex-col gap-1 col-span-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">From</span><input type="date" value={archiveFilterDateStart} onChange={e => setArchiveFilterDateStart(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[9px] font-bold outline-none" /></div>
                                                     <div className="flex flex-col gap-1 col-span-1"><span className="text-[8px] font-black text-slate-400 uppercase ml-2">To</span><input type="date" value={archiveFilterDateEnd} onChange={e => setArchiveFilterDateEnd(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[9px] font-bold outline-none" /></div>
                                                 </div>
@@ -747,53 +797,6 @@
                                         </div>
                                     )}
 
-                                    {activeTab === 'analisis' && (
-                                        <div className="space-y-10 fade-in">
-                                            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                                                <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">Analysis Dashboard</h2>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <select value={anaFilterUnit} onChange={e => setAnaFilterUnit(e.target.value)} className="p-2 bg-slate-50 border rounded-xl text-[10px] font-black uppercase outline-none shadow-inner"><option value="ALL">All Units</option>{CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
-                                                    <select value={anaFilterType} onChange={e => setAnaFilterType(e.target.value)} className="p-2 bg-slate-50 border rounded-xl text-[10px] font-black uppercase outline-none shadow-inner"><option value="ALL">All Types</option><option value="opr">OPR</option><option value="eksekutif">Executive</option></select>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex flex-col items-center"><Library size={32} className="text-indigo-600 mb-2"/><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Records</p><h3 className="text-5xl font-black text-slate-900 mt-1">{stats.total}</h3></div>
-                                                <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex flex-col">
-                                                    <div className="flex justify-between items-start mb-4"><div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">OPR</p><h3 className="text-4xl font-black text-slate-900">{stats.oprCount}</h3></div><span className="text-lg font-black text-indigo-500">{stats.total > 0 ? ((stats.oprCount / stats.total) * 100).toFixed(1) : 0}%</span></div>
-                                                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: `${stats.total > 0 ? (stats.oprCount / stats.total) * 100 : 0}%` }}></div></div>
-                                                </div>
-                                                <div className="bg-white p-8 rounded-[2rem] border shadow-sm flex flex-col">
-                                                    <div className="flex justify-between items-start mb-4"><div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Exec</p><h3 className="text-4xl font-black text-slate-900">{stats.execCount}</h3></div><span className="text-lg font-black text-amber-500">{stats.total > 0 ? ((stats.execCount / stats.total) * 100).toFixed(1) : 0}%</span></div>
-                                                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{ width: `${stats.total > 0 ? (stats.execCount / stats.total) * 100 : 0}%` }}></div></div>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                                <div className="lg:col-span-8 bg-white p-6 md:p-12 rounded-[2.5rem] border shadow-sm overflow-x-auto">
-                                                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3 mb-10"><BarChart2 size={20} className="text-indigo-500" /> Comparison</h4>
-                                                    <div className="flex items-end justify-between h-56 min-w-[500px] border-b relative">
-                                                        {CATEGORIES.map((cat) => {
-                                                            const count = stats.unitCounts[cat.id] || 0;
-                                                            const height = stats.total > 0 ? (count / Math.max(...Object.values(stats.unitCounts), 1)) * 100 : 0;
-                                                            return (<div key={cat.id} className="relative flex flex-col items-center flex-1 mx-1 h-full group text-center"><div className="absolute bottom-full mb-1 bg-slate-800 text-white text-[8px] px-2 py-1 rounded shadow-xl z-20 whitespace-nowrap">{count}</div><div className="w-full bg-slate-50 rounded-t-xl overflow-hidden h-full flex flex-col justify-end"><div className="chart-bar-anim w-full" style={{ height: `${height}%`, backgroundColor: cat.color }}></div></div><div className="absolute top-full mt-4 w-full h-12"><span className="text-[7px] font-black text-slate-400 uppercase transform -rotate-45 block origin-center">{cat.label}</span></div></div>);
-                                                        })}
-                                                    </div>
-                                                </div>
-                                                <div className="lg:col-span-4 bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl flex flex-col min-h-[400px]">
-                                                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-8 text-slate-400 flex items-center gap-2"><Users size={16} className="text-amber-400" /> Top Contributors</h4>
-                                                    <div className="space-y-4 flex-grow overflow-y-auto pr-2 scrollbar-hide">
-                                                        {stats.ranking.length > 0 ? stats.ranking.map((rank, idx) => (
-                                                            <div key={idx} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/10">
-                                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${idx === 0 ? 'bg-amber-400 text-slate-900' : 'bg-slate-800 text-slate-400'}`}>{idx + 1}</div>
-                                                                <div className="flex-grow min-w-0"><p className="text-[9px] font-black uppercase truncate">{rank.name}</p><div className="mt-1 w-full h-1 bg-white/10 rounded-full"><div className="h-full bg-amber-400" style={{ width: `${(rank.count / (stats.ranking[0]?.count || 1)) * 100}%` }}></div></div></div>
-                                                                <div className="font-black text-xs text-amber-400">{rank.count}</div>
-                                                            </div>
-                                                        )) : (<div className="h-full flex items-center justify-center opacity-30 italic text-[10px] uppercase font-bold text-white text-center">No Data</div>)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {activeTab === 'settings' && (
                                         <div className="max-w-4xl mx-auto space-y-8 fade-in">
                                             <div className="bg-white p-6 md:p-12 rounded-[2.5rem] shadow-xl border border-slate-100">
@@ -812,7 +815,7 @@
                                                     <div className="space-y-4 bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
                                                         <h4 className="text-[11px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2 mb-4"><Users size={16}/> Staff Management</h4>
                                                         <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                                                            {CATEGORIES.map(unit => (<div key={unit.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 uppercase mb-3">{unit.label}</p><div className="space-y-2">{(sysConfig.staffData[unit.id] || []).map((name, idx) => (<div key={idx} className="flex justify-between items-center group"><span className="text-[10px] font-bold text-slate-700">{name}</span><button onClick={() => { const newList = sysConfig.staffData[unit.id].filter((_, i) => i !== idx); updateStaffList(unit.id, newList); }} className="p-1 text-rose-400 hover:text-rose-600"><Trash size={14}/></button></div>))}<div className="pt-3 flex gap-2"><input type="text" placeholder="Add Name..." id={`add-staff-${unit.id}`} className="flex-grow bg-slate-50 border rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none" /><button onClick={() => { const input = document.getElementById(`add-staff-${unit.id}`); if(input.value.trim()){ const newList = [...(sysConfig.staffData[unit.id] || []), input.value.trim()]; updateStaffList(unit.id, newList); input.value = ''; } }} className="bg-indigo-600 text-white p-1.5 rounded-lg"><Plus size={14}/></button></div></div></div>))}
+                                                            {CATEGORIES_LIST.map(unit => (<div key={unit.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 uppercase mb-3">{unit.label}</p><div className="space-y-2">{(sysConfig.staffData[unit.id] || []).map((name, idx) => (<div key={idx} className="flex justify-between items-center group"><span className="text-[10px] font-bold text-slate-700">{name}</span><button onClick={() => { const newList = sysConfig.staffData[unit.id].filter((_, i) => i !== idx); updateStaffList(unit.id, newList); }} className="p-1 text-rose-400 hover:text-rose-600"><Trash size={14}/></button></div>))}<div className="pt-3 flex gap-2"><input type="text" placeholder="Add Name..." id={`add-staff-${unit.id}`} className="flex-grow bg-slate-50 border rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none" /><button onClick={() => { const input = document.getElementById(`add-staff-${unit.id}`); if(input.value.trim()){ const newList = [...(sysConfig.staffData[unit.id] || []), input.value.trim()]; updateStaffList(unit.id, newList); input.value = ''; } }} className="bg-indigo-600 text-white p-1.5 rounded-lg"><Plus size={14}/></button></div></div></div>))}
                                                         </div>
                                                     </div>
                                                 </div>
