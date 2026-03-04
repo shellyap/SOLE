@@ -21,10 +21,24 @@
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, serverTimestamp, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
 
+        // ✅ Firebase Ready Global Object
         window.FirebaseReady = {
-            initializeApp, getAuth, onAuthStateChanged, signInAnonymously, 
-            signInWithCustomToken, getFirestore, collection, addDoc, 
-            onSnapshot, query, deleteDoc, doc, serverTimestamp, updateDoc, getDoc, setDoc
+            initializeApp,
+            getAuth,
+            onAuthStateChanged,
+            signInAnonymously,
+            signInWithCustomToken,
+            getFirestore,
+            collection,
+            addDoc,
+            onSnapshot,
+            query,
+            deleteDoc,
+            doc,
+            serverTimestamp,
+            updateDoc,
+            getDoc,
+            setDoc
         };
     </script>
 
@@ -48,8 +62,23 @@
                 opacity: 1 !important;
             }
             .a4-fixed { height: 297mm !important; width: 210mm !important; border: none !important; box-shadow: none !important; margin: 0 !important; page-break-after: always; overflow: hidden !important; transform: none !important; }
-            .a4-auto { width: 210mm !important; height: auto !important; min-height: 297mm !important; border: none !important; box-shadow: none !important; margin: 0 !important; transform: none !important; }
-            tr, .img-card { page-break-inside: avoid !important; }
+            
+            .a4-auto { 
+                width: 210mm !important; 
+                height: auto !important; 
+                min-height: 297mm !important; 
+                border: none !important; 
+                box-shadow: none !important; 
+                margin: 0 !important; 
+                padding: 15mm !important;
+                display: block !important;
+                transform: none !important; 
+            }
+            
+            table { page-break-inside: auto; width: 100% !important; border-collapse: collapse; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            .img-card { page-break-inside: avoid; margin-bottom: 10px; }
+            h1, h2, .bg-gray-100 { page-break-after: avoid; }
         }
 
         .preview-container {
@@ -153,7 +182,6 @@
             return `${hour % 12 || 12}:${m} ${ampm}`;
         };
 
-        // ✅ IMAGE COMPRESSION HELPER (To fix 1MB Firestore Limit)
         const compressImage = (base64Str, maxWidth = 800, quality = 0.6) => {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -162,12 +190,10 @@
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-
                     if (width > maxWidth) {
                         height = (maxWidth / width) * height;
                         width = maxWidth;
                     }
-
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
@@ -177,7 +203,6 @@
             });
         };
 
-        // --- 3. FORM INITIALIZATION ---
         const INITIAL_FORM = {
             reportType: 'opr', jenisTugasRasmi: 'KURSUS', namaProgram: '', kategori: 'UNIT BAHASA', disediakanOleh: '', 
             jawatanPenyedia: getDefaultJawatan('UNIT BAHASA'), tarikhDari: '', tarikhHingga: '', tarikhLaporan: '', 
@@ -185,39 +210,36 @@
             rujukanSurat: '', kehadiran: '', pengenalan: '', objektif: '', pengisian: '', catatan: '', penutup: ''
         };
 
-        // --- 4. UI SUB-COMPONENTS ---
+        // --- 3. UI COMPONENTS (DEFINED EARLY TO PREVENT ReferenceError) ---
         const IconBase = ({ size = 24, className = "", children, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
                 {children}
             </svg>
         );
 
-        const Icons = {
-            Sparkles: (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1-1.275 1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v4"/><path d="M23 21h-4"/></IconBase>,
-            Layout: (p) => <IconBase {...p}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="10" x2="10" y1="21" y2="10"/></IconBase>,
-            Flag: (p) => <IconBase {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></IconBase>,
-            Library: (p) => <IconBase {...p}><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></IconBase>,
-            BarChart2: (p) => <IconBase {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></IconBase>,
-            Settings: (p) => <IconBase {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1! 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></IconBase>,
-            Camera: (p) => <IconBase {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></IconBase>,
-            Cloud: (p) => <IconBase {...p}><path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"/><path d="M17.5 19H9"/><path d="M17.5 13.5a5.5 5.5 0 0 1 4.3 8.3"/><path d="M5 19a4 4 0 0 1 0-8c2.4 0 4.3 1.1 5.4 2.8"/></IconBase>,
-            ChevronLeft: (p) => <IconBase {...p}><polyline points="15 18 9 12 15 6"/></IconBase>,
-            Download: (p) => <IconBase {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></IconBase>,
-            Printer: (p) => <IconBase {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></IconBase>,
-            ExternalLink: (p) => <IconBase {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="21" y2="3"/></IconBase>,
-            Eye: (p) => <IconBase {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></IconBase>,
-            Edit2: (p) => <IconBase {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></IconBase>,
-            Trash2: (p) => <IconBase {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></IconBase>,
-            School: (p) => <IconBase {...p}><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></IconBase>,
-            X: (p) => <IconBase {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>,
-            ChevronDown: (p) => <IconBase {...p}><polyline points="6 9 12 15 18 9"/></IconBase>,
-            Plus: (p) => <IconBase {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></IconBase>,
-            Users: (p) => <IconBase {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>,
-            Trash: (p) => <IconBase {...p}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></IconBase>,
-            Menu: (p) => <IconBase {...p}><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="18" y2="18"/></IconBase>
-        };
-
-        const { Sparkles, Layout, Flag, Library, BarChart2, Settings, Camera, Cloud, ChevronLeft, Download, Printer, ExternalLink, Eye, Edit2, Trash2, School, X, Plus, Users, Trash, ChevronDown, Menu } = Icons;
+        // ✅ Explicitly define each icon component to ensure they are available
+        const Sparkles = (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1-1.275 1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v4"/><path d="M23 21h-4"/></IconBase>;
+        const Layout = (p) => <IconBase {...p}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="10" x2="10" y1="21" y2="10"/></IconBase>;
+        const Flag = (p) => <IconBase {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></IconBase>;
+        const Library = (p) => <IconBase {...p}><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></IconBase>;
+        const BarChart2 = (p) => <IconBase {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></IconBase>;
+        const Settings = (p) => <IconBase {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1! 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></IconBase>;
+        const Camera = (p) => <IconBase {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></IconBase>;
+        const Cloud = (p) => <IconBase {...p}><path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"/><path d="M17.5 19H9"/><path d="M17.5 13.5a5.5 5.5 0 0 1 4.3 8.3"/><path d="M5 19a4 4 0 0 1 0-8c2.4 0 4.3 1.1 5.4 2.8"/></IconBase>;
+        const ChevronLeft = (p) => <IconBase {...p}><polyline points="15 18 9 12 15 6"/></IconBase>;
+        const Download = (p) => <IconBase {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></IconBase>;
+        const Printer = (p) => <IconBase {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></IconBase>;
+        const ExternalLink = (p) => <IconBase {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="21" y2="3"/></IconBase>;
+        const Eye = (p) => <IconBase {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></IconBase>;
+        const Edit2 = (p) => <IconBase {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></IconBase>;
+        const Trash2 = (p) => <IconBase {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></IconBase>;
+        const School = (p) => <IconBase {...p}><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></IconBase>;
+        const X = (p) => <IconBase {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
+        const ChevronDown = (p) => <IconBase {...p}><polyline points="6 9 12 15 18 9"/></IconBase>;
+        const Plus = (p) => <IconBase {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></IconBase>;
+        const Users = (p) => <IconBase {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>;
+        const Trash = (p) => <IconBase {...p}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></IconBase>;
+        const Menu = (p) => <IconBase {...p}><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="18" y2="18"/></IconBase>;
 
         const ReportDoc = ({ data, reportImages, config }) => {
             const cat = CATEGORIES_LIST.find(c => c.id === data.kategori) || CATEGORIES_LIST[0];
@@ -314,7 +336,7 @@
 
         const PreviewMenuComp = ({ handlePrint, downloadAsJPG }) => (
             <div className="preview-toolbar no-print flex items-center justify-center gap-2 mb-4 bg-white p-2 rounded-2xl shadow-md border border-slate-100">
-                <button onClick={handlePrint} title="Download as PDF" className="btn-action btn-action-square btn-action-pdf">
+                <button onClick={handlePrint} title="Download as PDF/Print" className="btn-action btn-action-square btn-action-pdf">
                     <Download size={20} />
                     <span className="mt-1 uppercase font-bold text-[7px]">PDF</span>
                 </button>
@@ -390,7 +412,7 @@
                 return Object.values(sysConfig.staffData).flat().sort();
             }, [sysConfig.staffData]);
 
-            // ✅ Robust Firebase Initialization
+            // Robust Firebase Initialization
             useEffect(() => {
                 const initFirebase = async () => {
                     if (window.FirebaseReady) {
@@ -425,7 +447,7 @@
                 return () => clearInterval(interval);
             }, []);
 
-            // Data Fetching
+            // Data Fetching Rule 1: Strict Paths
             useEffect(() => {
                 if (!user || !db) return;
                 const { collection, onSnapshot, doc } = window.FirebaseReady;
@@ -483,9 +505,9 @@
                     area.style.opacity = '1'; area.style.zIndex = '99999';
                     area.style.backgroundColor = '#ffffff';
                     await new Promise(r => setTimeout(r, 800));
-                    const canvas = await window.html2canvas(area, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+                    const canvas = await window.html2canvas(area, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff" });
                     area.style.display = 'none';
-                    const base64 = canvas.toDataURL('image/jpeg', 0.85); 
+                    const base64 = canvas.toDataURL('image/jpeg', 0.7); 
                     await fetch(WEB_APP_URL, {
                         method: "POST",
                         body: JSON.stringify({ fileData: base64, fileName: `${(viewingReport || formData).namaProgram || "Laporan"}_SOLE.jpg`, mimeType: "image/jpeg", category: (viewingReport || formData).kategori, staffName: (viewingReport || formData).disediakanOleh })
@@ -533,7 +555,6 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = async (ev) => {
-                        // ✅ COMPRESS IMAGE BEFORE STORING TO FIREBASE (Fix 1MB Limit)
                         const compressed = await compressImage(ev.target.result);
                         setImages(prev => { const n = [...prev]; n[index] = compressed; return n; }); 
                     };
@@ -610,7 +631,7 @@
                         
                         <header className="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between z-50">
                             <div className="flex items-center gap-3">
-                                <Sparkles className="text-indigo-400" size={24}/>
+                                <Sparkles size={24} className="text-indigo-400" />
                                 <h1 className="text-xl font-black tracking-tighter leading-none">SOLE-system</h1>
                             </div>
                             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-slate-800 rounded-lg">
@@ -621,7 +642,9 @@
                         <div className="flex flex-1 overflow-hidden relative">
                             <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
                                 <div className="p-8 bg-slate-950 flex flex-col gap-4 text-center mobile-hide">
-                                    <div className="mx-auto bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3"><Sparkles className="text-white" size={24}/></div>
+                                    <div className="mx-auto bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3">
+                                        <Sparkles size={24} className="text-white" />
+                                    </div>
                                     <h1 className="text-2xl font-black text-white tracking-tighter uppercase leading-none mt-2">SOLE-system</h1>
                                     <p className="text-[7px] text-slate-400 font-bold uppercase leading-tight">(Sistem OPR & Laporan Eksekutif Sektor Pembelajaran PPD Ranau)</p>
                                 </div>
@@ -698,7 +721,7 @@
                                         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 md:gap-12 fade-in">
                                             <div className="xl:col-span-5 space-y-8 order-2 xl:order-1">
                                                 <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-slate-100">
-                                                    <h3 className="font-black text-slate-800 text-lg uppercase tracking-widest mb-8">{editingId ? 'Update' : 'New Entry'}</h3>
+                                                    <h3 className="font-black text-slate-800 text-lg uppercase tracking-widest mb-8">{editingId ? 'Kemaskini' : 'Baru'}</h3>
                                                     <div className="space-y-4">
                                                         <select name="kategori" value={formData.kategori} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold outline-none focus:ring-2 ring-indigo-500/20">{CATEGORIES_LIST.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
                                                         {activeTab === 'laporan_eksekutif' && (<select name="jenisTugasRasmi" value={formData.jenisTugasRasmi} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold outline-none">{JENIS_TUGAS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select>)}
@@ -744,20 +767,20 @@
                                                                 {images.map((img, i) => (
                                                                     <div key={`img-slot-${i}`} className="aspect-video bg-slate-100 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group">
                                                                         {img ? (<React.Fragment><img src={img} className="w-full h-full object-cover" /><button type="button" onClick={() => removeImageSlot(i)} className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-full shadow-lg opacity-100 transition-all"><X size={14}/></button></React.Fragment>) : (
-                                                                            <div className="flex flex-col items-center gap-2"><label className="cursor-pointer flex flex-col items-center gap-2"><Camera size={24} className="text-slate-400" /><input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(i, e)} /></label>{formData.reportType === 'eksekutif' && (<button onClick={() => removeImageSlot(i)} className="text-[8px] font-bold text-rose-400 uppercase">Hapus</button>)}</div>
+                                                                            <div className="flex flex-col items-center gap-2"><label className="cursor-pointer flex flex-col items-center gap-2"><Camera size={24} className="text-slate-400" /><input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(i, e)} /></label>{formData.reportType === 'eksekutif' && (<button onClick={() => removeImageSlot(i)} className="text-[8px] font-bold text-rose-400 uppercase hover:text-rose-600 transition-colors">Hapus</button>)}</div>
                                                                         )}
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         </div>
-                                                        <button onClick={handleSaveReport} disabled={isSaving} className="w-full bg-slate-900 hover:bg-black text-white font-black py-6 rounded-3xl shadow-2xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs mt-6">{isSaving ? 'Processing...' : <><Icons.Cloud size={20} /> Simpan ke Cloud</>}</button>
+                                                        <button onClick={handleSaveReport} disabled={isSaving} className="w-full bg-slate-900 hover:bg-black text-white font-black py-6 rounded-3xl shadow-2xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-xs mt-6">{isSaving ? 'Processing...' : <><Cloud size={20} /> Simpan ke Cloud</>}</button>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="xl:col-span-7 flex flex-col items-center space-y-4 order-1 xl:order-2" ref={containerRef}>
                                                 <PreviewMenuComp handlePrint={handlePrintAction} downloadAsJPG={downloadAsJPG} />
-                                                <div className="preview-container" style={{ height: (297 * 3.78 * previewScale) + 'px' }}>
-                                                    <div style={{ transform: `scale(${previewScale})` }}>
+                                                <div className="preview-container" style={{ height: (formData.reportType === 'eksekutif' ? 'auto' : (297 * 3.78 * previewScale) + 'px') }}>
+                                                    <div style={{ transform: formData.reportType === 'eksekutif' ? 'none' : `scale(${previewScale})`, width: formData.reportType === 'eksekutif' ? '100%' : 'auto' }}>
                                                         {formData.reportType === 'eksekutif' ? <ExecDoc data={formData} reportImages={images} config={sysConfig} /> : <ReportDoc data={formData} reportImages={images.slice(0,4)} config={sysConfig} />}
                                                     </div>
                                                 </div>
@@ -803,8 +826,8 @@
                                                     <PreviewMenuComp handlePrint={handlePrintAction} downloadAsJPG={downloadAsJPG} />
                                                 </div>
                                             </div>
-                                            <div className="preview-container" style={{ height: (297 * 3.78 * previewScale) + 'px' }}>
-                                                <div style={{ transform: `scale(${previewScale})` }}>
+                                            <div className="preview-container" style={{ height: (viewingReport.reportType === 'eksekutif' ? 'auto' : (297 * 3.78 * previewScale) + 'px') }}>
+                                                <div style={{ transform: viewingReport.reportType === 'eksekutif' ? 'none' : `scale(${previewScale})`, width: viewingReport.reportType === 'eksekutif' ? '100%' : 'auto' }}>
                                                     {viewingReport.reportType === 'eksekutif' ? <ExecDoc data={viewingReport} reportImages={viewingReport.images || []} config={sysConfig} /> : <ReportDoc data={viewingReport} reportImages={(viewingReport.images || []).slice(0,4)} config={sysConfig} />}
                                                 </div>
                                             </div>
@@ -829,7 +852,7 @@
                                                     <div className="space-y-4 bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
                                                         <h4 className="text-[11px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2 mb-4"><Users size={16}/> Staff Management</h4>
                                                         <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                                                            {CATEGORIES_LIST.map(unit => (<div key={unit.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 uppercase mb-3">{unit.label}</p><div className="space-y-2">{(sysConfig.staffData[unit.id] || []).map((name, idx) => (<div key={idx} className="flex justify-between items-center group"><span className="text-[10px] font-bold text-slate-700">{name}</span><button onClick={() => { const newList = sysConfig.staffData[unit.id].filter((_, i) => i !== idx); updateStaffList(unit.id, newList); }} className="p-1 text-rose-400 hover:text-rose-600"><Trash size={14}/></button></div>))}<div className="pt-3 flex gap-2"><input type="text" placeholder="Add Name..." id={`add-staff-${unit.id}`} className="flex-grow bg-slate-50 border rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none" /><button onClick={() => { const input = document.getElementById(`add-staff-${unit.id}`); if(input.value.trim()){ const newList = [...(sysConfig.staffData[unit.id] || []), input.value.trim()]; updateStaffList(unit.id, newList); input.value = ''; } }} className="bg-indigo-600 text-white p-1.5 rounded-lg"><Plus size={14}/></button></div></div></div>))}
+                                                            {CATEGORIES.map(unit => (<div key={unit.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-[9px] font-black text-slate-400 uppercase mb-3">{unit.label}</p><div className="space-y-2">{(sysConfig.staffData[unit.id] || []).map((name, idx) => (<div key={idx} className="flex justify-between items-center group"><span className="text-[10px] font-bold text-slate-700">{name}</span><button onClick={() => { const newList = sysConfig.staffData[unit.id].filter((_, i) => i !== idx); updateStaffList(unit.id, newList); }} className="p-1 text-rose-400 hover:text-rose-600"><Trash size={14}/></button></div>))}<div className="pt-3 flex gap-2"><input type="text" placeholder="Add Name..." id={`add-staff-${unit.id}`} className="flex-grow bg-slate-50 border rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none" /><button onClick={() => { const input = document.getElementById(`add-staff-${unit.id}`); if(input.value.trim()){ const newList = [...(sysConfig.staffData[unit.id] || []), input.value.trim()]; updateStaffList(unit.id, newList); input.value = ''; } }} className="bg-indigo-600 text-white p-1.5 rounded-lg"><Plus size={14}/></button></div></div></div>))}
                                                         </div>
                                                     </div>
                                                 </div>
